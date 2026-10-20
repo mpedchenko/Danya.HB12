@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DANYA LEVEL 12 // BATTLE ROYALE LOBBY</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pubg: {
+              orange: "#FF6A00",
+              lime: "#B6FF00",
+              yellow: "#FFE600",
+              bg: "#10110D",
+              graphite: "#161914",
+              card: "rgba(22, 25, 20, 0.85)",
+              border: "#2A2E25",
+            }
+          },
+          fontFamily: {
+            oxanium: ['Oxanium', 'sans-serif'],
+            inter: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --pubg-orange: #FF6A00;
+      --pubg-lime: #B6FF00;
+      --pubg-yellow: #FFE600;
+      --pubg-bg: #10110D;
+    }
+    body {
+      background-color: #10110D;
+      color: #FFFFFF;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .font-oxanium { font-family: 'Oxanium', sans-serif; }
+
+    /* Animated Holographic & Particle Grid Background */
+    .cyber-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle at 50% 20%, rgba(255, 106, 0, 0.14) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(182, 255, 0, 0.08) 0%, transparent 45%),
+                  radial-gradient(circle at 10% 70%, rgba(255, 230, 0, 0.07) 0%, transparent 40%),
+                  #10110D;
+    }
+    .grid-lines {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 106, 0, 0.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(182, 255, 0, 0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, transparent 80%);
+      animation: gridScan 25s linear infinite;
+    }
+    @keyframes gridScan {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(40px); }
+    }
+
+    #particle-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.75;
+    }
+
+    .hud-panel {
+      background: rgba(22, 25, 20, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 106, 0, 0.3);
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 106, 0, 0.05);
+      position: relative;
+    }
+    .hud-panel::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; width: 10px; height: 10px;
+      border-top: 2px solid #FF6A00;
+      border-left: 2px solid #FF6A00;
+    }
+    .hud-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px; width: 10px; height: 10px;
+      border-bottom: 2px solid #B6FF00;
+      border-right: 2px solid #B6FF00;
+    }
+
+    .neon-orange { border: 2px solid #FF6A00; box-shadow: 0 0 18px rgba(255, 106, 0, 0.45); }
+    .neon-lime { border: 2px solid #B6FF00; box-shadow: 0 0 18px rgba(182, 255, 0, 0.45); }
+    .neon-yellow { border: 2px solid #FFE600; box-shadow: 0 0 20px rgba(255, 230, 0, 0.5); }
+
+    .scan-laser {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #FF6A00, #B6FF00, transparent);
+      box-shadow: 0 0 10px #FF6A00;
+      animation: laserSweep 4s ease-in-out infinite;
+      opacity: 0.6;
+    }
+    @keyframes laserSweep {
+      0% { top: 0%; opacity: 0; }
+      20% { opacity: 0.8; }
+      80% { opacity: 0.8; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    @keyframes lootFlash {
+      0% { filter: brightness(2) drop-shadow(0 0 20px #FFE600); transform: scale(0.97); }
+      50% { filter: brightness(1.5) drop-shadow(0 0 15px #FF6A00); transform: scale(1.02); }
+      100% { filter: brightness(1) drop-shadow(0 0 0 transparent); transform: scale(1); }
+    }
+    .loot-revealed {
+      animation: lootFlash 0.5s ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .grid-lines, .scan-laser, #particle-canvas {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="selection:bg-[#FF6A00] selection:text-black">
+
+  <!-- DYNAMIC HOLOGRAPHIC BACKGROUND -->
+  <div class="cyber-bg">
+    <div class="grid-lines"></div>
+    <canvas id="particle-canvas"></canvas>
+  </div>
+
+  <!-- MAIN WRAPPER WITH PARALLAX DEPTH -->
+  <div class="relative z-10">
+
+    <!-- TOP SYSTEM STATUS BAR -->
+    <header class="sticky top-0 z-50 bg-[#10110D]/90 backdrop-blur-md border-b border-[#2A2E25] px-4 py-2.5">
+      <div class="max-w-5xl mx-auto flex justify-between items-center text-xs font-oxanium text-gray-400">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#B6FF00] animate-pulse"></span>
+          <span class="text-white font-bold tracking-wider">SERVER: DANYA_LOBBY_12</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-[#FF6A00] hidden sm:inline">PING: 12ms</span>
+          <span class="bg-[#20231D] text-[#B6FF00] border border-[#B6FF00]/40 px-2.5 py-0.5 rounded font-bold">
+            STATUS: READY
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 1. ГОЛОВНИЙ ЕКРАН -->
+    <section class="min-h-screen relative flex flex-col items-center justify-center px-4 py-16 text-center">
+      <div class="hud-panel rounded-3xl p-8 sm:p-12 max-w-xl mx-auto flex flex-col items-center">
+        
+        <!-- DANYA AVATAR -->
+        <div class="relative inline-flex flex-col items-center">
+          <div class="w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden neon-orange bg-[#20231D] relative group">
+            <img src="https://res.cloudinary.com/dfhhd0twi/image/upload/v1792506039/IMG_8566_zeiqpw.jpg" alt="Danya Avatar" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+            <div class="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-[#B6FF00]"></div>
+            <div class="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-[#B6FF00]"></div>
+            <div class="absolute bottom-1 left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-[#B6FF00]"></div>
+            <div class="absolute bottom-1 right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-[#B6FF00]"></div>
+            <div class="scan-laser"></div>
+          </div>
+          <div class="mt-3 flex flex-col items-center">
+            <div class="flex items-center gap-1.5 bg-[#10110D] border border-[#FF6A00] px-3 py-0.5 rounded-full shadow-md">
+              <span class="w-2 h-2 rounded-full bg-[#B6FF00] animate-ping"></span>
+              <span class="font-oxanium text-xs font-bold text-[#B6FF00]">READY</span>
+            </div>
+            <span class="font-oxanium font-extrabold text-base text-white mt-1 tracking-wider">Даня — HOST / LVL 12</span>
+          </div>
+        </div>
+
+        <h1 class="font-oxanium font-extrabold text-3xl sm:text-5xl text-white mt-6 leading-tight">
+          Я АПАЮ <span class="text-[#FF6A00] drop-shadow-[0_0_20px_#FF6A00]">12-Й РІВЕНЬ!</span>
+        </h1>
+
+        <p class="font-inter text-gray-200 text-base sm:text-lg mt-4 leading-relaxed">
+          Йооо, сквад! 24 жовтня буде не просто день народження — буде імбова катка!
+        </p>
+        <p class="font-inter text-gray-300 text-sm sm:text-base mt-2 leading-relaxed">
+          VR, свій сквад, лут у вигляді піци й купа двіжу. Таке не можна пропускати!
+        </p>
+
+        <a href="#lobby" class="mt-8 px-10 py-4 bg-[#FF6A00] hover:bg-[#ff7b1a] text-black font-oxanium font-extrabold text-lg rounded-xl shadow-neon-orange transition-transform active:scale-95 uppercase tracking-wider flex items-center gap-3">
+          ЗАЛІТАЙ У ЛОБІ ➔
+        </a>
+      </div>
+    </section>
+
+    <!-- 2. ІГРОВЕ ЛОБІ -->
+    <section id="lobby" class="min-h-screen py-16 px-4 flex flex-col justify-center items-center">
+      <div class="max-w-3xl w-full hud-panel rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+        <div class="flex flex-col md:flex-row items-center gap-8">
+          <div class="w-36 h-36 rounded-2xl overflow-hidden neon-orange bg-[#20231D] flex-shrink-0 relative">
+            <img src="https://res.cloudinary.com/dfhhd0twi/image/upload/v1792506039/IMG_8566_zeiqpw.jpg" alt="Danya Avatar" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            <span class="absolute bottom-1 left-2 font-oxanium text-[10px] text-[#B6FF00] font-bold">LVL 12</span>
+          </div>
+
+          <div class="flex-1 text-center md:text-left">
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-3">
+              <span class="bg-[#20231D] text-[#B6FF00] border border-[#B6FF00]/40 text-xs px-2.5 py-1 rounded-md font-oxanium font-bold">
+                ⚡ SQUAD LOBBY
+              </span>
+              <span class="bg-[#20231D] text-gray-300 text-xs px-2.5 py-1 rounded-md font-oxanium">
+                24 ЖОВТНЯ 2026
+              </span>
+            </div>
+
+            <h2 class="font-oxanium text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+              ГОТОВИЙ ДО <span class="text-[#FF6A00]">ІМБОВОЇ КАТКИ?</span>
+            </h2>
+
+            <p class="mt-4 font-inter text-gray-300 text-sm sm:text-base leading-relaxed">
+              Сквад, у мене ап рівня — уже 12! Треба зібрати всіх своїх, залетіти у VR і влаштувати такий двіж, щоб потім ще довго згадували.
+            </p>
+
+            <div class="mt-3 font-oxanium font-bold text-[#B6FF00] text-sm sm:text-base">
+              Тож не AFK — перевіряй інвентар і готуйся до старту!
+            </div>
+
+            <a href="#map" class="inline-block mt-6 px-8 py-3.5 bg-[#B6FF00] hover:bg-[#c2ff24] text-black font-oxanium font-extrabold text-sm sm:text-base rounded-xl transition-transform active:scale-95 uppercase shadow-neon-lime">
+              ЛУТАТИ ПЛАН ➔
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. МАРШРУТ МІСІЇ -->
+    <section id="map" class="py-20 px-4 max-w-4xl mx-auto">
+      <div class="text-center mb-12">
+        <span class="font-oxanium text-xs font-bold text-[#FF6A00] tracking-widest uppercase bg-[#FF6A00]/10 px-3 py-1 rounded-full border border-[#FF6A00]/30">
+          TACTICAL BRIEFING
+        </span>
+        <h2 class="font-oxanium text-3xl sm:text-4xl font-extrabold text-white mt-3">
+          MISSION: LEVEL 12
+        </h2>
+        <p class="font-inter text-gray-400 text-sm sm:text-base mt-2">
+          Три точки. Один сквад. Жодного AFK!
+        </p>
+      </div>
+
+      <!-- INTERACTIVE BR MISSION MAP -->
+      <div class="hud-panel rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+        <div class="flex items-center justify-between border-b border-[#2A2E25] pb-4 mb-8 text-xs font-oxanium">
+          <div class="flex items-center gap-2 text-[#FFE600]">
+            <span class="w-2 h-2 rounded-full bg-[#FFE600] animate-ping"></span>
+            <span>ZONE RADAR: ACTIVE</span>
+          </div>
+          <div class="text-gray-400">
+            SECTOR: NEZHYN // 24.10.2026
+          </div>
+        </div>
+
+        <!-- 3 MISSION DROP POINTS -->
+        <div class="relative space-y-8 pl-4 sm:pl-8 before:absolute before:left-[27px] sm:before:left-[43px] before:top-4 before:bottom-4 before:w-[2px] before:bg-gradient-to-b before:from-[#FF6A00] via-[#FFE600] to-[#B6FF00]">
+          
+          <!-- POINT 01 — MEET UP -->
+          <div class="relative pl-12 sm:pl-16 group">
+            <div class="absolute left-0 top-1 w-10 h-10 rounded-xl bg-[#10110D] border-2 border-[#FF6A00] flex items-center justify-center font-oxanium font-extrabold text-sm text-[#FF6A00] shadow-neon-orange">
+              01
+            </div>
+            <div class="bg-[#161914] border border-[#FF6A00]/40 rounded-2xl p-5 hover:border-[#FF6A00] transition-colors">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-oxanium text-xs font-bold text-[#FF6A00] uppercase tracking-wider">POINT 01 — MEET UP</span>
+                <span class="text-[10px] font-oxanium bg-[#FF6A00]/10 text-[#FF6A00] px-2 py-0.5 rounded border border-[#FF6A00]/30 font-bold uppercase">RALLY POINT</span>
+              </div>
+              <h3 class="font-oxanium text-xl font-bold text-white mt-1">13:30 · ЗАЛІТАЄМО ДО МЕНЕ</h3>
+              <p class="font-inter text-gray-300 text-sm mt-2 leading-relaxed">
+                Збираємось біля мого двору. Не запізнюйся, бо сквад не буде чекати вічність. Стартуємо вчасно!
+              </p>
+            </div>
+          </div>
+
+          <!-- POINT 02 — ROTATION -->
+          <div class="relative pl-12 sm:pl-16 group">
+            <div class="absolute left-0 top-1 w-10 h-10 rounded-xl bg-[#10110D] border-2 border-[#FFE600] flex items-center justify-center font-oxanium font-extrabold text-sm text-[#FFE600] shadow-neon-yellow">
+              02
+            </div>
+            <div class="bg-[#161914] border border-[#FFE600]/40 rounded-2xl p-5 hover:border-[#FFE600] transition-colors">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-oxanium text-xs font-bold text-[#FFE600] uppercase tracking-wider">POINT 02 — ROTATION</span>
+                <span class="text-[10px] font-oxanium bg-[#FFE600]/10 text-[#FFE600] px-2 py-0.5 rounded border border-[#FFE600]/30 font-bold uppercase">IN TRANSIT</span>
+              </div>
+              <h3 class="font-oxanium text-xl font-bold text-white mt-1">НАСТУПНА ТОЧКА — НІЖИН</h3>
+              <p class="font-inter text-gray-300 text-sm mt-2 leading-relaxed">
+                Усі в тачку — робимо ротацію до Ніжина! Попереду головний двіж, тож не випадай із катки.
+              </p>
+            </div>
+          </div>
+
+          <!-- POINT 03 — VR DROP ZONE -->
+          <div class="relative pl-12 sm:pl-16 group">
+            <div class="absolute left-0 top-1 w-10 h-10 rounded-xl bg-[#10110D] border-2 border-[#B6FF00] flex items-center justify-center font-oxanium font-extrabold text-sm text-[#B6FF00] shadow-neon-lime">
+              03
+            </div>
+            <div class="bg-[#161914] border border-[#B6FF00]/40 rounded-2xl p-5 hover:border-[#B6FF00] transition-colors">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-oxanium text-xs font-bold text-[#B6FF00] uppercase tracking-wider">POINT 03 — VR DROP ZONE</span>
+                <span class="text-[10px] font-oxanium bg-[#B6FF00]/10 text-[#B6FF00] px-2 py-0.5 rounded border border-[#B6FF00]/30 font-bold uppercase">HOT DROP</span>
+              </div>
+              <h3 class="font-oxanium text-xl font-bold text-white mt-1">14:30 · VR START</h3>
+              <p class="font-inter text-gray-300 text-sm mt-2 leading-relaxed">
+                Оце вже імба! Залітаємо у VR-кімнату, надягаємо шоломи й переносимося у віртуальний світ. Час показати, хто тут справжній про!
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Окреме помітне нагадування -->
+        <div class="mt-10 bg-[#10110D]/90 border-2 border-[#B6FF00] rounded-2xl p-6 text-center shadow-neon-lime">
+          <div class="font-oxanium font-extrabold text-lg sm:text-2xl text-[#B6FF00] tracking-wide uppercase">
+            У VR ГРАЄМО БЕЗ ДОРОСЛИХ!
+          </div>
+          <div class="font-inter text-sm text-gray-300 mt-2">
+            24 жовтня 2026 року · 13:30 збір біля мого двору · Ротація до Ніжина · 14:30 старт VR
+          </div>
+          <a href="#loot" class="inline-block mt-5 px-8 py-3 bg-[#FF6A00] hover:bg-[#ff7b1a] text-black font-oxanium font-extrabold rounded-xl shadow-neon-orange uppercase tracking-wider text-sm transition-transform active:scale-95">
+            ПЛАН ЗАФІКСОВАНО ➔
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ЧАС ДЛЯ ДВІЖУ (2x2 LOOT CARDS) -->
+    <section id="loot" class="py-20 px-4 max-w-5xl mx-auto">
+      <div class="text-center mb-12">
+        <span class="font-oxanium text-xs font-bold text-[#B6FF00] tracking-widest uppercase bg-[#B6FF00]/10 px-3 py-1 rounded-full border border-[#B6FF00]/30">
+          SUPPLY CRATES
+        </span>
+        <h2 class="font-oxanium text-3xl sm:text-4xl font-extrabold text-white mt-3">
+          ЧАС ДЛЯ ДВІЖУ
+        </h2>
+        <p class="font-inter text-gray-400 text-sm sm:text-base mt-2">
+          Не сиди в лобі — відкривай картки й дивись, який лут на тебе чекає!
+        </p>
+      </div>
+
+      <!-- 2 x 2 GRID -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- CARD 1: VR-КАТКА -->
+        <div id="crate-1" class="hud-panel rounded-3xl p-6 sm:p-7 flex flex-col justify-between min-h-[250px] border border-[#FF6A00]/50 transition-all hover:border-[#FF6A00]">
+          <div class="flex justify-between items-start">
+            <div class="w-12 h-12 rounded-xl bg-[#20231D] border border-[#FF6A00] flex items-center justify-center text-2xl">
+              🥽
+            </div>
+            <span class="font-oxanium text-[11px] font-bold text-[#FF6A00] bg-[#FF6A00]/10 px-2.5 py-1 rounded border border-[#FF6A00]/30 uppercase">
+              VR-КАТКА
+            </span>
+          </div>
+          <div id="crate-body-1" class="my-5">
+            <div class="flex items-center gap-2 text-gray-400 font-oxanium text-sm">
+              <span>🔒 ЛУТ ЗАБЛОКОВАНО</span>
+            </div>
+          </div>
+          <button onclick="toggleCrate(1, 'VR ON. REALITY OFF.', 'Повні 2 години нон-стоп VR-геймінгу в нашому розпорядженні! Самі обираємо режим, мапу й гру — повний кастомний дроп без обмежень. Час показати справжній скіл!', 'АКТИВУВАТИ')" id="crate-btn-1" class="w-full py-3.5 bg-[#FF6A00] hover:bg-[#ff7b1a] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider transition-all shadow-neon-orange">
+            АКТИВУВАТИ
+          </button>
+        </div>
+
+        <!-- CARD 2: НАШ СКВАД -->
+        <div id="crate-2" class="hud-panel rounded-3xl p-6 sm:p-7 flex flex-col justify-between min-h-[250px] border border-[#B6FF00]/50 transition-all hover:border-[#B6FF00]">
+          <div class="flex justify-between items-start">
+            <div class="w-12 h-12 rounded-xl bg-[#20231D] border border-[#B6FF00] flex items-center justify-center text-2xl">
+              👥
+            </div>
+            <span class="font-oxanium text-[11px] font-bold text-[#B6FF00] bg-[#B6FF00]/10 px-2.5 py-1 rounded border border-[#B6FF00]/30 uppercase">
+              НАШ СКВАД
+            </span>
+          </div>
+          <div id="crate-body-2" class="my-5">
+            <div class="flex items-center gap-2 text-gray-400 font-oxanium text-sm">
+              <span>🔒 ЛУТ ЗАБЛОКОВАНО</span>
+            </div>
+          </div>
+          <button onclick="toggleCrate(2, 'SOLO? НЕ СЬОГОДНІ!', 'Збираємо найімбовіший сквад на сервері! Разом ми — сама топова команда, яка бере тільки ТОП-1 і розносить будь-яку катку. Залітай у тіму!', 'ВІДКРИТИ')" id="crate-btn-2" class="w-full py-3.5 bg-[#B6FF00] hover:bg-[#c2ff24] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider transition-all shadow-neon-lime">
+            ВІДКРИТИ
+          </button>
+        </div>
+
+        <!-- CARD 3: ПІДЗАРЯДКА HP -->
+        <div id="crate-3" class="hud-panel rounded-3xl p-6 sm:p-7 flex flex-col justify-between min-h-[250px] border border-[#FFE600]/50 transition-all hover:border-[#FFE600]">
+          <div class="flex justify-between items-start">
+            <div class="w-12 h-12 rounded-xl bg-[#20231D] border border-[#FFE600] flex items-center justify-center text-2xl">
+              🍕
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="font-oxanium text-[11px] font-bold text-[#FFE600] bg-[#FFE600]/10 px-2.5 py-1 rounded border border-[#FFE600]/30 uppercase">
+                ПІДЗАРЯДКА HP
+              </span>
+              <span class="font-oxanium text-[10px] font-bold text-[#B6FF00] bg-[#B6FF00]/15 px-2 py-0.5 rounded">
+                HP BOOST
+              </span>
+            </div>
+          </div>
+          <div id="crate-body-3" class="my-5">
+            <div class="flex items-center gap-2 text-gray-400 font-oxanium text-sm">
+              <span>🔒 ЛУТ ЗАБЛОКОВАНО</span>
+            </div>
+          </div>
+          <button onclick="toggleCrate(3, 'HP НА НУЛІ? Є РІШЕННЯ!', 'Піца, чіпси та смаколики — закидаємо паливо, відновлюємо HP і повертаємося в двіж!', 'ЗАБРАТИ ЛУТ')" id="crate-btn-3" class="w-full py-3.5 bg-[#FFE600] hover:bg-[#fff033] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider transition-all shadow-neon-yellow">
+            ЗАБРАТИ ЛУТ
+          </button>
+        </div>
+
+        <!-- CARD 4: СЕКРЕТНИЙ ЛУТ -->
+        <div id="crate-4" class="hud-panel rounded-3xl p-6 sm:p-7 flex flex-col justify-between min-h-[250px] border border-[#FF6A00]/50 transition-all hover:border-[#FFE600]">
+          <div class="flex justify-between items-start">
+            <div class="w-12 h-12 rounded-xl bg-[#20231D] border border-dashed border-[#FFE600] flex items-center justify-center text-2xl animate-pulse">
+              ✨
+            </div>
+            <span class="font-oxanium text-[11px] font-bold text-[#FFE600] bg-[#FFE600]/10 px-2.5 py-1 rounded border border-[#FFE600]/30 uppercase">
+              СЕКРЕТНИЙ ЛУТ
+            </span>
+          </div>
+          <div id="crate-body-4" class="my-5">
+            <div class="flex items-center gap-2 text-gray-400 font-oxanium text-sm">
+              <span>🔒 СЕКРЕТНИЙ СХОВАН</span>
+            </div>
+          </div>
+          <button onclick="toggleSecretCrate()" id="crate-btn-4" class="w-full py-3.5 bg-gradient-to-r from-[#FF6A00] to-[#FFE600] hover:from-[#ff7b1a] hover:to-[#fff033] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider transition-all shadow-neon-yellow">
+            РОЗСЕКРЕТИТИ ЛУТ
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 6. ПІДТВЕРДЖЕННЯ УЧАСТІ (RSVP) -->
+    <section id="rsvp" class="py-20 px-4 max-w-xl mx-auto">
+      <div id="rsvp-form" class="hud-panel rounded-3xl p-6 sm:p-8">
+        <div class="text-center mb-6">
+          <span class="font-oxanium text-xs font-bold text-[#FF6A00] tracking-widest uppercase bg-[#FF6A00]/10 px-3 py-1 rounded-full border border-[#FF6A00]/30">
+            SQUAD RECRUITMENT
+          </span>
+          <h3 class="font-oxanium text-2xl sm:text-3xl font-extrabold text-white mt-3">
+            ТИ В ГРІ ЧИ ПРОПУСКАЄШ КАТКУ?
+          </h3>
+          <p class="font-inter text-gray-400 text-sm mt-1">
+            Давай перевіримо, чи буде повний сквад!
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block font-oxanium text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">
+              Твій нікнейм?
+            </label>
+            <input type="text" id="guest-name" placeholder="Введи своє ім’я" class="w-full bg-[#10110D] border border-[#2A2E25] focus:border-[#FF6A00] rounded-xl px-4 py-3.5 text-white font-inter placeholder-gray-600 focus:outline-none transition-colors">
+          </div>
+
+          <div id="rsvp-err" class="hidden text-red-400 text-xs font-inter font-medium"></div>
+
+          <div class="pt-2">
+            <div class="text-xs font-oxanium font-bold text-gray-300 mb-3 uppercase tracking-wider">
+              Ну що, залетіти з нами?
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onclick="submitRSVP('БУДУ')" class="flex items-center justify-center gap-2 bg-[#B6FF00] hover:bg-[#c2ff24] text-black font-oxanium font-extrabold py-3.5 px-4 rounded-xl transition-all shadow-neon-lime">
+                ✓ ТАК, Я READY!
+              </button>
+              <button onclick="submitRSVP('НЕ БУДУ')" class="flex items-center justify-center gap-2 bg-[#20231D] hover:bg-[#2A2E25] border border-gray-600 text-gray-300 font-oxanium font-bold py-3.5 px-4 rounded-xl transition-all">
+                ✕ СЬОГОДНІ НЕ ВИЙДЕ
+              </button>
+            </div>
+          </div>
+
+          <p class="text-center font-inter text-xs text-gray-500 mt-4">
+            Зафіксуй свій вибір, щоб я знав, чи чекати на тебе в лобі!
+          </p>
+        </div>
+      </div>
+
+      <!-- 7. ПІСЛЯ ПІДТВЕРДЖЕННЯ УЧАСТІ (SUCCESS) -->
+      <div id="rsvp-ok" class="hidden hud-panel rounded-3xl p-8 text-center neon-lime">
+        <div class="w-16 h-16 bg-[#B6FF00]/20 rounded-full flex items-center justify-center mx-auto text-[#B6FF00] mb-4 text-3xl">
+          🔥
+        </div>
+        <div class="font-oxanium text-xs font-bold text-[#B6FF00] uppercase tracking-widest">
+          Твій статус: READY
+        </div>
+        <h3 class="font-oxanium text-3xl font-extrabold text-white mt-2">
+          ЄЄЄ, ТИ В СКВАДІ!
+        </h3>
+        <p class="font-inter text-gray-300 mt-2 text-sm">
+          Тепер головне — не проспати старт!
+        </p>
+
+        <div class="mt-6 bg-[#10110D] border border-[#2A2E25] rounded-2xl p-5 text-left text-sm font-inter space-y-2 text-gray-200">
+          <p class="font-oxanium font-bold text-[#FFE600] uppercase tracking-wider text-xs">Твоя місія:</p>
+          <ul class="space-y-1.5 list-disc list-inside text-gray-300">
+            <li><span class="text-white font-medium">24 жовтня 2026 року</span></li>
+            <li>13:30 — збір біля мого двору</li>
+            <li>Далі — ротація автомобілем до Ніжина</li>
+            <li>14:30 — старт VR-катки</li>
+          </ul>
+          <p class="font-oxanium font-bold text-[#B6FF00] pt-2">
+            У VR граємо без дорослих!
+          </p>
+        </div>
+
+        <p class="font-oxanium font-bold text-white mt-6">
+          Побачимось на точці збору. Буде імба!
+        </p>
+
+        <button onclick="resetRSVP()" class="mt-6 px-8 py-3.5 bg-[#B6FF00] hover:bg-[#c2ff24] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider shadow-neon-lime">
+          GG WP — Я ГОТОВИЙ!
+        </button>
+      </div>
+
+      <!-- 8. ЯКЩО ГІСТЬ НЕ ЗМОЖЕ ПРИЙТИ (DECLINED) -->
+      <div id="rsvp-no" class="hidden hud-panel rounded-3xl p-8 text-center border-gray-600">
+        <div class="inline-block px-3 py-1 rounded bg-[#20231D] text-gray-400 font-oxanium text-xs font-bold uppercase mb-3">
+          Твій статус: OFFLINE
+        </div>
+        <h3 class="font-oxanium text-2xl sm:text-3xl font-extrabold text-white">
+          ЕХ, МІНУС ОДИН ГРАВЕЦЬ…
+        </h3>
+        <p class="font-inter text-gray-300 mt-3 text-sm leading-relaxed">
+          Шкода, що цього разу не залетиш у сквад. Але все норм — ще перетнемося на наступній катці!
+        </p>
+        <button onclick="resetRSVP()" class="mt-6 px-8 py-3 bg-[#FF6A00] hover:bg-[#ff7b1a] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider transition-transform active:scale-95 shadow-neon-orange">
+          ЗМІНИТИ РІШЕННЯ
+        </button>
+      </div>
+    </section>
+
+    <!-- 5. НАШ СКВАД -->
+    <section id="squad" class="py-20 px-4 max-w-4xl mx-auto">
+      <div class="text-center mb-10">
+        <span class="font-oxanium text-xs font-bold text-[#B6FF00] tracking-widest uppercase bg-[#B6FF00]/10 px-3 py-1 rounded-full border border-[#B6FF00]/30">
+          MULTIPLAYER ROSTER
+        </span>
+        <h2 class="font-oxanium text-3xl sm:text-4xl font-extrabold text-white mt-3">
+          СКВАД, ДЕ ВИ?
+        </h2>
+        <p class="font-inter text-gray-400 text-sm sm:text-base mt-2">
+          Хто вже READY до катки?
+        </p>
+      </div>
+
+      <!-- SQUAD GRID -->
+      <div id="squad-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        
+        <!-- DANYA: HOST PERMANENT CARD -->
+        <div class="hud-panel rounded-2xl p-4 flex items-center gap-4 neon-orange">
+          <div class="w-14 h-14 rounded-xl overflow-hidden border-2 border-[#FF6A00] bg-[#20231D] flex-shrink-0 relative">
+            <img src="https://res.cloudinary.com/dfhhd0twi/image/upload/v1792506039/IMG_8566_zeiqpw.jpg" alt="Danya" class="w-full h-full object-cover">
+          </div>
+          <div class="overflow-hidden">
+            <div class="flex items-center gap-1.5">
+              <span class="font-oxanium font-extrabold text-white text-base">Даня</span>
+              <span class="text-[9px] bg-[#FF6A00] text-black font-oxanium font-bold px-1.5 py-0.2 rounded">HOST</span>
+            </div>
+            <div class="font-oxanium text-xs text-[#B6FF00] font-semibold mt-0.5">LVL 12</div>
+            <div class="font-inter text-[11px] text-gray-400 uppercase tracking-wider">PARTY LEADER</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- EMPTY STATE MESSAGE (ТОЧНЕ ФОРМУЛЮВАННЯ) -->
+      <div id="squad-empty-msg" class="mt-8 text-center hud-panel rounded-2xl p-6 text-gray-300 font-inter text-sm">
+        <p class="font-oxanium font-bold text-base text-white">ПОКИ ЩО Я В ЛОБІ САМ.</p>
+        <p class="text-gray-400 text-xs mt-1">Залітай у сквад, не будь AFK!</p>
+      </div>
+
+      <div class="text-center mt-6">
+        <p class="font-inter text-xs text-gray-400">
+          Сквад поповнюється — приєднуйся! (Підтверджених бійців: <span id="squad-count" class="text-[#B6FF00] font-bold font-oxanium">0</span>)
+        </p>
+      </div>
+    </section>
+
+    <!-- 9. ФІНАЛЬНИЙ ЕКРАН -->
+    <footer class="py-24 px-4 text-center">
+      <div class="max-w-xl mx-auto flex flex-col items-center">
+        <div class="w-40 h-40 rounded-2xl overflow-hidden neon-orange bg-[#20231D]">
+          <img src="https://res.cloudinary.com/dfhhd0twi/image/upload/v1792506039/IMG_8566_zeiqpw.jpg" alt="Danya Avatar" class="w-full h-full object-cover">
+        </div>
+
+        <h2 class="font-oxanium text-3xl sm:text-5xl font-extrabold text-white mt-6">
+          LEVEL 12: <span class="text-[#FF6A00]">UNLOCKED!</span>
+        </h2>
+
+        <p class="font-inter text-gray-300 text-sm sm:text-base mt-3 max-w-md leading-relaxed">
+          Місію майже виконано — залишилося зібрати сквад і залетіти в двіж!
+        </p>
+
+        <div class="mt-4 font-oxanium font-bold text-sm text-[#FFE600] tracking-wider uppercase">
+          24.10.2026 · READY UP!
+        </div>
+
+        <p class="font-inter text-gray-400 text-xs sm:text-sm mt-1">
+          Збираємось. Робимо ротацію. Залітаємо у VR.
+        </p>
+
+        <p class="font-inter text-gray-300 text-sm mt-3">
+          Побачимось на старті!
+        </p>
+
+        <div class="font-oxanium font-extrabold text-xl sm:text-2xl text-[#B6FF00] mt-6 tracking-wider">
+          GG WP, СКВАД!
+        </div>
+
+
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // --- 1. AMBIENT PARTICLES ENGINE ---
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const particleColors = ['#FF6A00', '#B6FF00', '#FFE600'];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2.2 + 0.8;
+        this.speedX = (Math.random() - 0.5) * 0.4;
+        this.speedY = (Math.random() - 0.5) * 0.4;
+        this.color = particleColors[Math.floor(Math.random() * particleColors.length)];
+        this.alpha = Math.random() * 0.5 + 0.2;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    const count = window.innerWidth < 640 ? 30 : 60;
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle());
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // --- 2. 2x2 LOOT CRATES LOGIC ---
+    const crateStates = { 1: false, 2: false, 3: false, 4: false };
+
+    function toggleCrate(id, title, desc, defaultBtn) {
+      crateStates[id] = !crateStates[id];
+      const body = document.getElementById('crate-body-' + id);
+      const btn = document.getElementById('crate-btn-' + id);
+      const card = document.getElementById('crate-' + id);
+
+      if (crateStates[id]) {
+        card.classList.add('loot-revealed');
+        setTimeout(() => card.classList.remove('loot-revealed'), 500);
+        body.innerHTML = `
+          <h3 class="font-oxanium text-xl font-bold text-white tracking-wide">${title}</h3>
+          <p class="font-inter text-gray-300 text-sm mt-2 leading-relaxed">${desc}</p>
+        `;
+        btn.innerText = 'ЗАКРИТИ';
+        btn.className = 'w-full py-3.5 bg-[#20231D] text-gray-300 rounded-xl font-oxanium font-bold text-sm tracking-wider uppercase';
+      } else {
+        body.innerHTML = '<div class="text-gray-400 font-oxanium text-sm">🔒 ЛУТ ЗАБЛОКОВАНО</div>';
+        btn.innerText = defaultBtn;
+        btn.className = 'w-full py-3.5 bg-[#FF6A00] hover:bg-[#ff7b1a] text-black rounded-xl font-oxanium font-extrabold text-sm tracking-wider uppercase transition-all shadow-neon-orange';
+      }
+    }
+
+    function toggleSecretCrate() {
+      crateStates[4] = !crateStates[4];
+      const body = document.getElementById('crate-body-4');
+      const btn = document.getElementById('crate-btn-4');
+      const card = document.getElementById('crate-4');
+
+      if (crateStates[4]) {
+        card.classList.add('loot-revealed');
+        setTimeout(() => card.classList.remove('loot-revealed'), 500);
+        body.innerHTML = `
+          <h3 class="font-oxanium text-xl font-extrabold text-[#FFE600]">ООО, ЩО ТУТ У НАС?</h3>
+          <div class="font-inter text-gray-200 text-sm mt-2">Ти знайшов секретний лут!</div>
+          <div class="font-oxanium text-base font-bold text-[#B6FF00] mt-1">+100 ДО АУРИ!</div>
+          <p class="font-inter text-gray-300 text-xs mt-2">GG WP, ти це заслужив!</p>
+        `;
+        btn.innerText = 'ЗАКРИТИ СЕКРЕТ';
+        btn.className = 'w-full py-3.5 bg-[#20231D] text-gray-300 rounded-xl font-oxanium font-bold text-sm tracking-wider uppercase';
+      } else {
+        body.innerHTML = '<div class="text-gray-400 font-oxanium text-sm">🔒 СЕКРЕТНИЙ СХОВАН</div>';
+        btn.innerText = 'РОЗСЕКРЕТИТИ ЛУТ';
+        btn.className = 'w-full py-3.5 bg-gradient-to-r from-[#FF6A00] to-[#FFE600] text-black font-oxanium font-extrabold text-sm rounded-xl uppercase tracking-wider transition-all shadow-neon-yellow';
+      }
+    }
+
+    // --- 3. BATTLE ROYALE SQUAD ROSTER WITH STYLED GEAR ICONS ---
+    const squadIcons = [
+      { badge: "🪖", bg: "bg-emerald-950/60", border: "border-[#B6FF00]" },
+      { badge: "🥽", bg: "bg-amber-950/60", border: "border-[#FFE600]" },
+      { badge: "⚡", bg: "bg-orange-950/60", border: "border-[#FF6A00]" },
+      { badge: "🛡️", bg: "bg-cyan-950/60", border: "border-cyan-400" },
+      { badge: "🎯", bg: "bg-purple-950/60", border: "border-purple-400" }
+    ];
+
+    let currentSquad = [];
+    const STORAGE_KEY_SQUAD = 'danya_level12_guests_list';
+    const stored = localStorage.getItem(STORAGE_KEY_SQUAD);
+    if (stored) {
+      try {
+        currentSquad = JSON.parse(stored);
+      } catch(e) {}
+    }
+
+    function renderSquad() {
+      const grid = document.getElementById('squad-grid');
+      const emptyMsg = document.getElementById('squad-empty-msg');
+      const countEl = document.getElementById('squad-count');
+
+      while (grid.children.length > 1) {
+        grid.removeChild(grid.lastChild);
+      }
+
+      countEl.innerText = currentSquad.length;
+
+      if (currentSquad.length === 0) {
+        emptyMsg.classList.remove('hidden');
+      } else {
+        emptyMsg.classList.add('hidden');
+        currentSquad.forEach((guest, index) => {
+          const gear = squadIcons[index % squadIcons.length];
+          const card = document.createElement('div');
+          card.className = 'hud-panel rounded-2xl p-4 flex items-center gap-4 border ' + gear.border;
+          card.innerHTML = `
+            <div class="w-14 h-14 rounded-xl ${gear.bg} border ${gear.border} flex flex-col items-center justify-center flex-shrink-0 shadow-md">
+              <span class="text-xl">${gear.badge}</span>
+              <span class="text-[9px] font-oxanium font-bold text-gray-300">OP-${index + 1}</span>
+            </div>
+            <div class="overflow-hidden">
+              <div class="font-oxanium font-bold text-white text-base truncate">${guest.name}</div>
+              <div class="flex items-center gap-1.5 text-[11px] font-oxanium font-bold text-[#B6FF00] mt-0.5">
+                <span class="w-2 h-2 rounded-full bg-[#B6FF00] animate-pulse"></span>
+                <span>READY</span>
+              </div>
+              <div class="text-[10px] text-gray-400 font-inter">TEAM OPERATOR</div>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      }
+    }
+
+    // Google Apps Script Web App Integration
+    const GOOGLE_SCRIPT_WEB_APP_URL = "";
+
+    const STORAGE_KEY_MY_PLAYER = 'danya_level12_my_player';
+
+    // Check if user already registered on this device
+    function checkAlreadyRegistered() {
+      const mySavedName = localStorage.getItem(STORAGE_KEY_MY_PLAYER);
+      if (mySavedName) {
+        const inSquad = currentSquad.find(g => g.name.toLowerCase() === mySavedName.toLowerCase());
+        if (inSquad) {
+          document.getElementById('rsvp-form').classList.add('hidden');
+          document.getElementById('rsvp-ok').classList.remove('hidden');
+        }
+      }
+    }
+
+    async function submitRSVP(choice) {
+      const input = document.getElementById('guest-name');
+      const errorDiv = document.getElementById('rsvp-err');
+      const name = input.value.trim();
+
+      if (!name) {
+        errorDiv.innerText = "Введи свій нікнейм!";
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      if (choice === 'БУДУ') {
+        // Enforce: Cannot add multiple times or duplicate names
+        const existing = currentSquad.find(g => g.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+          errorDiv.innerText = "Гравець з таким нікнеймом уже в скваді! Повторно додатися не можна.";
+          errorDiv.classList.remove('hidden');
+          return;
+        }
+
+        const registeredSelf = localStorage.getItem(STORAGE_KEY_MY_PLAYER);
+        if (registeredSelf && registeredSelf.toLowerCase() !== name.toLowerCase()) {
+          errorDiv.innerText = "Ти вже зареєстрував гравця (" + registeredSelf + ")! Один гравець може додатись тільки один раз.";
+          errorDiv.classList.remove('hidden');
+          return;
+        }
+
+        errorDiv.classList.add('hidden');
+        currentSquad.push({ name: name, status: 'READY' });
+        localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
+        localStorage.setItem(STORAGE_KEY_MY_PLAYER, name);
+
+        document.getElementById('rsvp-form').classList.add('hidden');
+        document.getElementById('rsvp-ok').classList.remove('hidden');
+        
+        // Auto scroll smoothly to show squad updated right below
+        setTimeout(() => {
+          const squadSection = document.getElementById('squad');
+          if (squadSection) {
+            squadSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+
+      } else {
+        errorDiv.classList.add('hidden');
+        currentSquad = currentSquad.filter(g => g.name.toLowerCase() !== name.toLowerCase());
+        localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
+        localStorage.removeItem(STORAGE_KEY_MY_PLAYER);
+        document.getElementById('rsvp-form').classList.add('hidden');
+        document.getElementById('rsvp-no').classList.remove('hidden');
+      }
+
+      if (GOOGLE_SCRIPT_WEB_APP_URL) {
+        try {
+          await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guest_name: name, attendance: choice })
+          });
+        } catch (e) {
+          console.warn("Sheets sync:", e);
+        }
+      }
+
+      renderSquad();
+    }
+
+    function resetRSVP() {
+      document.getElementById('rsvp-form').classList.remove('hidden');
+      document.getElementById('rsvp-ok').classList.add('hidden');
+      document.getElementById('rsvp-no').classList.add('hidden');
+    }
+
+    renderSquad();
+    checkAlreadyRegistered();
+  </script>
+</body>
+</html>

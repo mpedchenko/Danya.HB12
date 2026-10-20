@@ -801,11 +801,28 @@
     }
 
     // Google Apps Script Web App Integration
-    const GOOGLE_SCRIPT_WEB_APP_URL = "";
-
+    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGXeZOnH8xDnGAYkhlqc2lyKXFRqhOfS29tcs3RMWk-HzN-YfGfD10ujL8EoRoJbeL/exec";
     const STORAGE_KEY_MY_PLAYER = 'danya_level12_my_player';
+    const STORAGE_KEY_MY_GUEST_ID = 'danya_level12_guest_id';
 
-    // Check if user already registered on this device
+    // Завантаження реального списку з Google Таблиці
+    async function syncSquadFromGoogleSheet() {
+      if (!GOOGLE_SCRIPT_WEB_APP_URL) return;
+      try {
+        const response = await fetch(GOOGLE_SCRIPT_WEB_APP_URL);
+        const data = await response.json();
+        if (data && data.success && Array.isArray(data.squad)) {
+          currentSquad = data.squad;
+          localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
+          renderSquad();
+          checkAlreadyRegistered();
+        }
+      } catch (err) {
+        console.warn("Синхронізація з таблицею не вдалася (використовуємо локальний кеш):", err);
+      }
+    }
+
+    // Перевірка чи гравець вже зареєстрований на цьому пристрої
     function checkAlreadyRegistered() {
       const mySavedName = localStorage.getItem(STORAGE_KEY_MY_PLAYER);
       if (mySavedName) {
@@ -829,7 +846,6 @@
       }
 
       if (choice === 'БУДУ') {
-        // Enforce: Cannot add multiple times or duplicate names
         const existing = currentSquad.find(g => g.name.toLowerCase() === name.toLowerCase());
         if (existing) {
           errorDiv.innerText = "Гравець з таким нікнеймом уже в скваді! Повторно додатися не можна.";
@@ -845,14 +861,40 @@
         }
 
         errorDiv.classList.add('hidden');
-        currentSquad.push({ name: name, status: 'READY' });
+        
+        let guestId = localStorage.getItem(STORAGE_KEY_MY_GUEST_ID);
+        if (!guestId) {
+          guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+          localStorage.setItem(STORAGE_KEY_MY_GUEST_ID, guestId);
+        }
+
+        currentSquad.push({ id: guestId, name: name, status: 'READY' });
         localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
         localStorage.setItem(STORAGE_KEY_MY_PLAYER, name);
 
         document.getElementById('rsvp-form').classList.add('hidden');
         document.getElementById('rsvp-ok').classList.remove('hidden');
-        
-        // Auto scroll smoothly to show squad updated right below
+
+        // Відправка на Google Диск у Таблицю
+        if (GOOGLE_SCRIPT_WEB_APP_URL) {
+          try {
+            await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                guest_id: guestId,
+                guest_name: name,
+                attendance: 'БУДУ'
+              })
+            });
+            // Повторно оновлюємо актуальний список
+            syncSquadFromGoogleSheet();
+          } catch (e) {
+            console.warn("Помилка відправки в Google Таблицю:", e);
+          }
+        }
+
+        // Плавний скрол до списку команди
         setTimeout(() => {
           const squadSection = document.getElementById('squad');
           if (squadSection) {
@@ -862,23 +904,30 @@
 
       } else {
         errorDiv.classList.add('hidden');
+        let guestId = localStorage.getItem(STORAGE_KEY_MY_GUEST_ID) || '';
+
         currentSquad = currentSquad.filter(g => g.name.toLowerCase() !== name.toLowerCase());
         localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
         localStorage.removeItem(STORAGE_KEY_MY_PLAYER);
+
         document.getElementById('rsvp-form').classList.add('hidden');
         document.getElementById('rsvp-no').classList.remove('hidden');
-      }
 
-      if (GOOGLE_SCRIPT_WEB_APP_URL) {
-        try {
-          await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ guest_name: name, attendance: choice })
-          });
-        } catch (e) {
-          console.warn("Sheets sync:", e);
+        if (GOOGLE_SCRIPT_WEB_APP_URL) {
+          try {
+            await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                guest_id: guestId,
+                guest_name: name,
+                attendance: 'НЕ БУДУ'
+              })
+            });
+            syncSquadFromGoogleSheet();
+          } catch (e) {
+            console.warn("Помилка відправки в Google Таблицю:", e);
+          }
         }
       }
 
@@ -893,6 +942,7 @@
 
     renderSquad();
     checkAlreadyRegistered();
+    syncSquadFromGoogleSheet();
   </script>
 </body>
 </html>

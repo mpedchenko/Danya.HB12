@@ -450,7 +450,7 @@
       </div>
     </section>
 
-    <!-- 6. ПІДТВЕРДЖЕННЯ УЧАСТІ (RSVP) -->
+    <!-- 5. ПІДТВЕРДЖЕННЯ УЧАСТІ (RSVP) -->
     <section id="rsvp" class="py-20 px-4 max-w-xl mx-auto">
       <div id="rsvp-form" class="hud-panel rounded-3xl p-6 sm:p-8">
         <div class="text-center mb-6">
@@ -495,7 +495,7 @@
         </div>
       </div>
 
-      <!-- 7. ПІСЛЯ ПІДТВЕРДЖЕННЯ УЧАСТІ (SUCCESS) -->
+      <!-- 6. ПІСЛЯ ПІДТВЕРДЖЕННЯ УЧАСТІ (SUCCESS) -->
       <div id="rsvp-ok" class="hidden hud-panel rounded-3xl p-8 text-center neon-lime">
         <div class="w-16 h-16 bg-[#B6FF00]/20 rounded-full flex items-center justify-center mx-auto text-[#B6FF00] mb-4 text-3xl">
           🔥
@@ -532,7 +532,7 @@
         </button>
       </div>
 
-      <!-- 8. ЯКЩО ГІСТЬ НЕ ЗМОЖЕ ПРИЙТИ (DECLINED) -->
+      <!-- 7. ЯКЩО ГІСТЬ НЕ ЗМОЖЕ ПРИЙТИ (DECLINED) -->
       <div id="rsvp-no" class="hidden hud-panel rounded-3xl p-8 text-center border-gray-600">
         <div class="inline-block px-3 py-1 rounded bg-[#20231D] text-gray-400 font-oxanium text-xs font-bold uppercase mb-3">
           Твій статус: OFFLINE
@@ -549,7 +549,7 @@
       </div>
     </section>
 
-    <!-- 5. НАШ СКВАД -->
+    <!-- 8. НАШ СКВАД -->
     <section id="squad" class="py-20 px-4 max-w-4xl mx-auto">
       <div class="text-center mb-10">
         <span class="font-oxanium text-xs font-bold text-[#B6FF00] tracking-widest uppercase bg-[#B6FF00]/10 px-3 py-1 rounded-full border border-[#B6FF00]/30">
@@ -626,12 +626,20 @@
         <div class="font-oxanium font-extrabold text-xl sm:text-2xl text-[#B6FF00] mt-6 tracking-wider">
           GG WP, СКВАД!
         </div>
-
-
       </div>
     </footer>
 
   </div>
+
+  <!-- HIDDEN SUBMISSION FORM AND IFRAME (GUARANTEES 100% BYPASS OF CORS BLOCKS) -->
+  <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+  <form id="native-google-form" action="https://script.google.com/macros/s/AKfycbxGXeZOnH8xDnGAYkhlqc2lyKXFRqhOfS29tcs3RMWk-HzN-YfGfD10ujL8EoRoJbeL/exec" method="POST" target="hidden_iframe" style="display:none;">
+    <input type="hidden" name="guest_id" id="form_guest_id">
+    <input type="hidden" name="name" id="form_name">
+    <input type="hidden" name="guest_name" id="form_guest_name">
+    <input type="hidden" name="attendance" id="form_attendance">
+    <input type="hidden" name="status" id="form_status">
+  </form>
 
   <script>
     // --- 1. AMBIENT PARTICLES ENGINE ---
@@ -724,7 +732,7 @@
       crateStates[4] = !crateStates[4];
       const body = document.getElementById('crate-body-4');
       const btn = document.getElementById('crate-btn-4');
-      const card = document.getElementById('crate-4');
+      const card = document.getElementById('crate-' + id = 4);
 
       if (crateStates[4]) {
         card.classList.add('loot-revealed');
@@ -744,7 +752,7 @@
       }
     }
 
-    // --- 3. BATTLE ROYALE SQUAD ROSTER WITH STYLED GEAR ICONS ---
+    // --- 3. SQUAD ROSTER ---
     const squadIcons = [
       { badge: "🪖", bg: "bg-emerald-950/60", border: "border-[#B6FF00]" },
       { badge: "🥽", bg: "bg-amber-950/60", border: "border-[#FFE600]" },
@@ -800,33 +808,33 @@
       }
     }
 
-    // Google Apps Script Web App Integration
+    // --- 4. GOOGLE SHEETS DUAL-SYNC ENGINE ---
     const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGXeZOnH8xDnGAYkhlqc2lyKXFRqhOfS29tcs3RMWk-HzN-YfGfD10ujL8EoRoJbeL/exec";
     const STORAGE_KEY_MY_PLAYER = 'danya_level12_my_player';
     const STORAGE_KEY_MY_GUEST_ID = 'danya_level12_guest_id';
 
-    // Завантаження реального списку з Google Таблиці
     async function syncSquadFromGoogleSheet() {
       if (!GOOGLE_SCRIPT_WEB_APP_URL) return;
       try {
-        const response = await fetch(GOOGLE_SCRIPT_WEB_APP_URL);
+        const response = await fetch(GOOGLE_SCRIPT_WEB_APP_URL, { cache: 'no-store' });
         const data = await response.json();
         const list = (data && (data.guests || data.squad)) || [];
         if (Array.isArray(list)) {
+          // Normalize names
           currentSquad = list.map(item => ({
             name: item.name || item.guest_name || String(item),
             status: 'READY'
-          }));
+          })).filter(g => g.name && g.name !== 'undefined');
+
           localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
           renderSquad();
           checkAlreadyRegistered();
         }
       } catch (err) {
-        console.warn("Синхронізація з таблицею не вдалася (використовуємо локальний кеш):", err);
+        console.warn("Помилка отримання скваду з таблиці:", err);
       }
     }
 
-    // Перевірка чи гравець вже зареєстрований на цьому пристрої
     function checkAlreadyRegistered() {
       const mySavedName = localStorage.getItem(STORAGE_KEY_MY_PLAYER);
       if (mySavedName) {
@@ -836,6 +844,36 @@
           document.getElementById('rsvp-ok').classList.remove('hidden');
         }
       }
+    }
+
+    function transmitDataToGoogle(guestId, name, attendance) {
+      // Method 1: Native HTML Form post into hidden iframe (Bypasses all CORS issues in browsers)
+      try {
+        document.getElementById('form_guest_id').value = guestId;
+        document.getElementById('form_name').value = name;
+        document.getElementById('form_guest_name').value = name;
+        document.getElementById('form_attendance').value = attendance;
+        document.getElementById('form_status').value = attendance;
+        document.getElementById('native-google-form').submit();
+      } catch(e) {
+        console.warn("Form iframe post failed:", e);
+      }
+
+      // Method 2: Fetch with URLSearchParams (fallback)
+      try {
+        const params = new URLSearchParams();
+        params.append("guest_id", guestId);
+        params.append("name", name);
+        params.append("guest_name", name);
+        params.append("attendance", attendance);
+        params.append("status", attendance);
+
+        fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: params
+        });
+      } catch(e) {}
     }
 
     async function submitRSVP(choice) {
@@ -865,7 +903,7 @@
         }
 
         errorDiv.classList.add('hidden');
-        
+
         let guestId = localStorage.getItem(STORAGE_KEY_MY_GUEST_ID);
         if (!guestId) {
           guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
@@ -879,45 +917,13 @@
         document.getElementById('rsvp-form').classList.add('hidden');
         document.getElementById('rsvp-ok').classList.remove('hidden');
 
-        // Відправка на Google Диск у Таблицю
-        if (GOOGLE_SCRIPT_WEB_APP_URL) {
-          try {
-            const payload = {
-              name: name,
-              guest_name: name,
-              attendance: 'БУДУ',
-              status: 'БУДУ',
-              guest_id: guestId
-            };
-            
-            // Спробуємо POST через FormData (без CORS-помилок для Apps Script)
-            const formData = new FormData();
-            for (const key in payload) {
-              formData.append(key, payload[key]);
-            }
-            
-            await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-              method: 'POST',
-              mode: 'no-cors',
-              body: formData
-            });
+        // Відправляємо в Google Таблицю
+        transmitDataToGoogle(guestId, name, 'БУДУ');
 
-            // Також паралельно відправимо JSON для doPost з e.postData.contents
-            try {
-              await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-              });
-            } catch (_) {}
+        // Повторна синхронізація через 2 секунди
+        setTimeout(syncSquadFromGoogleSheet, 2000);
 
-            setTimeout(syncSquadFromGoogleSheet, 1500);
-          } catch (e) {
-            console.warn("Помилка відправки в Google Таблицю:", e);
-          }
-        }
-
-        // Плавний скрол до списку команди
+        // Плавний скрол до списку
         setTimeout(() => {
           const squadSection = document.getElementById('squad');
           if (squadSection) {
@@ -936,29 +942,8 @@
         document.getElementById('rsvp-form').classList.add('hidden');
         document.getElementById('rsvp-no').classList.remove('hidden');
 
-        if (GOOGLE_SCRIPT_WEB_APP_URL) {
-          try {
-            const payload = {
-              name: name,
-              guest_name: name,
-              attendance: 'НЕ БУДУ',
-              status: 'НЕ БУДУ',
-              guest_id: guestId
-            };
-            const formData = new FormData();
-            for (const key in payload) {
-              formData.append(key, payload[key]);
-            }
-            await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-              method: 'POST',
-              mode: 'no-cors',
-              body: formData
-            });
-            setTimeout(syncSquadFromGoogleSheet, 1500);
-          } catch (e) {
-            console.warn("Помилка відправки в Google Таблицю:", e);
-          }
-        }
+        transmitDataToGoogle(guestId, name, 'НЕ БУДУ');
+        setTimeout(syncSquadFromGoogleSheet, 2000);
       }
 
       renderSquad();

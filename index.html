@@ -633,7 +633,7 @@
 
   <!-- HIDDEN SUBMISSION FORM AND IFRAME (GUARANTEES 100% BYPASS OF CORS BLOCKS) -->
   <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-  <form id="native-google-form" action="https://script.google.com/macros/s/AKfycbxGXeZOnH8xDnGAYkhlqc2lyKXFRqhOfS29tcs3RMWk-HzN-YfGfD10ujL8EoRoJbeL/exec" method="POST" target="hidden_iframe" style="display:none;">
+  <form id="native-google-form" action="https://script.google.com/macros/s/AKfycbwQgBBHTrd4HgTns3x97TV4X7-TdVWBHE43emHhV6FxgeeHnrkfRNsOu9_gGen8FnC7/exec" method="POST" target="hidden_iframe" style="display:none;">
     <input type="hidden" name="guest_id" id="form_guest_id">
     <input type="hidden" name="name" id="form_name">
     <input type="hidden" name="guest_name" id="form_guest_name">
@@ -809,7 +809,7 @@
     }
 
     // --- 4. GOOGLE SHEETS DUAL-SYNC ENGINE ---
-    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGXeZOnH8xDnGAYkhlqc2lyKXFRqhOfS29tcs3RMWk-HzN-YfGfD10ujL8EoRoJbeL/exec";
+    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwQgBBHTrd4HgTns3x97TV4X7-TdVWBHE43emHhV6FxgeeHnrkfRNsOu9_gGen8FnC7/exec";
     const STORAGE_KEY_MY_PLAYER = 'danya_level12_my_player';
     const STORAGE_KEY_MY_GUEST_ID = 'danya_level12_guest_id';
 
@@ -847,7 +847,26 @@
     }
 
     function transmitDataToGoogle(guestId, name, attendance) {
-      // Method 1: Native HTML Form post into hidden iframe (Bypasses all CORS issues in browsers)
+      const queryParams = "?name=" + encodeURIComponent(name)
+                        + "&guest_name=" + encodeURIComponent(name)
+                        + "&attendance=" + encodeURIComponent(attendance)
+                        + "&status=" + encodeURIComponent(attendance)
+                        + "&guest_id=" + encodeURIComponent(guestId)
+                        + "&_t=" + Date.now();
+      const directUrl = GOOGLE_SCRIPT_WEB_APP_URL + queryParams;
+
+      // Спосіб 1: Прямий GET-запит (який щойно протестовано і він гарантовано записує в таблицю)
+      try {
+        fetch(directUrl, { mode: 'no-cors', cache: 'no-store' });
+      } catch(e) {}
+
+      // Спосіб 2: Beacon / Image ping (працює навіть при закритті сторінки і в усіх мобільних Safari/Chrome)
+      try {
+        const ping = new Image();
+        ping.src = directUrl;
+      } catch(e) {}
+
+      // Спосіб 3: Прихована форма в iframe (дублюючий резерв)
       try {
         document.getElementById('form_guest_id').value = guestId;
         document.getElementById('form_name').value = name;
@@ -855,24 +874,6 @@
         document.getElementById('form_attendance').value = attendance;
         document.getElementById('form_status').value = attendance;
         document.getElementById('native-google-form').submit();
-      } catch(e) {
-        console.warn("Form iframe post failed:", e);
-      }
-
-      // Method 2: Fetch with URLSearchParams (fallback)
-      try {
-        const params = new URLSearchParams();
-        params.append("guest_id", guestId);
-        params.append("name", name);
-        params.append("guest_name", name);
-        params.append("attendance", attendance);
-        params.append("status", attendance);
-
-        fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          body: params
-        });
       } catch(e) {}
     }
 

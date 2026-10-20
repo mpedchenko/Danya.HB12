@@ -811,8 +811,12 @@
       try {
         const response = await fetch(GOOGLE_SCRIPT_WEB_APP_URL);
         const data = await response.json();
-        if (data && data.success && Array.isArray(data.squad)) {
-          currentSquad = data.squad;
+        const list = (data && (data.guests || data.squad)) || [];
+        if (Array.isArray(list)) {
+          currentSquad = list.map(item => ({
+            name: item.name || item.guest_name || String(item),
+            status: 'READY'
+          }));
           localStorage.setItem(STORAGE_KEY_SQUAD, JSON.stringify(currentSquad));
           renderSquad();
           checkAlreadyRegistered();
@@ -878,17 +882,36 @@
         // Відправка на Google Диск у Таблицю
         if (GOOGLE_SCRIPT_WEB_APP_URL) {
           try {
+            const payload = {
+              name: name,
+              guest_name: name,
+              attendance: 'БУДУ',
+              status: 'БУДУ',
+              guest_id: guestId
+            };
+            
+            // Спробуємо POST через FormData (без CORS-помилок для Apps Script)
+            const formData = new FormData();
+            for (const key in payload) {
+              formData.append(key, payload[key]);
+            }
+            
             await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({
-                guest_id: guestId,
-                guest_name: name,
-                attendance: 'БУДУ'
-              })
+              mode: 'no-cors',
+              body: formData
             });
-            // Повторно оновлюємо актуальний список
-            syncSquadFromGoogleSheet();
+
+            // Також паралельно відправимо JSON для doPost з e.postData.contents
+            try {
+              await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+              });
+            } catch (_) {}
+
+            setTimeout(syncSquadFromGoogleSheet, 1500);
           } catch (e) {
             console.warn("Помилка відправки в Google Таблицю:", e);
           }
@@ -915,16 +938,23 @@
 
         if (GOOGLE_SCRIPT_WEB_APP_URL) {
           try {
+            const payload = {
+              name: name,
+              guest_name: name,
+              attendance: 'НЕ БУДУ',
+              status: 'НЕ БУДУ',
+              guest_id: guestId
+            };
+            const formData = new FormData();
+            for (const key in payload) {
+              formData.append(key, payload[key]);
+            }
             await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({
-                guest_id: guestId,
-                guest_name: name,
-                attendance: 'НЕ БУДУ'
-              })
+              mode: 'no-cors',
+              body: formData
             });
-            syncSquadFromGoogleSheet();
+            setTimeout(syncSquadFromGoogleSheet, 1500);
           } catch (e) {
             console.warn("Помилка відправки в Google Таблицю:", e);
           }
